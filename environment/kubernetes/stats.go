@@ -58,19 +58,16 @@ func (e *Environment) pollResources(ctx context.Context) error {
 			break
 		}
 
+		// Don't throw an error if pod metrics are not available, just keep trying.
 		podMetrics, err := mc.MetricsV1beta1().PodMetricses(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
 
-		podContainers := podMetrics.Containers
-		for _, container := range podContainers {
-			if container.Name != "process" {
-				continue
-			}
-
-			cpuQuantity := container.Usage.Cpu().AsDec().String()
-			memQuantity, ok := container.Usage.Memory().AsInt64()
+		// Check if container index 0 is not out of range,
+		// if it is then send only the uptime stats.
+		//
+		// @see https://stackoverflow.com/questions/26126235/panic-runtime-error-index-out-of-range-in-go
+		if len(podMetrics.Containers) != 0 {
+			cpuQuantity := podMetrics.Containers[0].Usage.Cpu().AsDec().String()
+			memQuantity, ok := podMetrics.Containers[0].Usage.Memory().AsInt64()
 			if !ok {
 				break
 			}
@@ -82,13 +79,17 @@ func (e *Environment) pollResources(ctx context.Context) error {
 				break
 			}
 
-			// msg := fmt.Sprintf("CPU usage: %f \n Memory usage: %d", f, memQuantity)
-			// fmt.Println(msg)
-
 			st := environment.Stats{
 				Uptime:      uptime,
 				Memory:      uint64(memQuantity),
 				CpuAbsolute: f * 100,
+			}
+			e.Events().Publish(environment.ResourceEvent, st)
+		} else {
+			uptime = uptime + 1000
+
+			st := environment.Stats{
+				Uptime: uptime,
 			}
 			e.Events().Publish(environment.ResourceEvent, st)
 		}

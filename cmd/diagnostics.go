@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,14 +15,12 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/apex/log"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/parsers/kernel"
 	"github.com/docker/docker/pkg/parsers/operatingsystem"
 	"github.com/goccy/go-json"
 	"github.com/spf13/cobra"
 
 	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
 	"github.com/pterodactyl/wings/loggers/cli"
 	"github.com/pterodactyl/wings/system"
 )
@@ -91,15 +88,15 @@ func diagnosticsCmdRun(*cobra.Command, []string) {
 		panic(err)
 	}
 
-	dockerVersion, dockerInfo, dockerErr := getDockerInfo()
+	// dockerVersion, dockerInfo, dockerErr := getDockerInfo()
 
 	output := &strings.Builder{}
 	fmt.Fprintln(output, "Pterodactyl Wings - Diagnostics Report")
 	printHeader(output, "Versions")
 	fmt.Fprintln(output, "               Wings:", system.Version)
-	if dockerErr == nil {
-		fmt.Fprintln(output, "              Docker:", dockerVersion.Version)
-	}
+	// if dockerErr == nil {
+	// 	fmt.Fprintln(output, "              Docker:", dockerVersion.Version)
+	// }
 	if v, err := kernel.GetKernelVersion(); err == nil {
 		fmt.Fprintln(output, "              Kernel:", v)
 	}
@@ -131,30 +128,30 @@ func diagnosticsCmdRun(*cobra.Command, []string) {
 	fmt.Fprintln(output, "         Server Time:", time.Now().Format(time.RFC1123Z))
 	fmt.Fprintln(output, "          Debug Mode:", cfg.Debug)
 
-	printHeader(output, "Docker: Info")
-	if dockerErr == nil {
-		fmt.Fprintln(output, "Server Version:", dockerInfo.ServerVersion)
-		fmt.Fprintln(output, "Storage Driver:", dockerInfo.Driver)
-		if dockerInfo.DriverStatus != nil {
-			for _, pair := range dockerInfo.DriverStatus {
-				fmt.Fprintf(output, "  %s: %s\n", pair[0], pair[1])
-			}
-		}
-		if dockerInfo.SystemStatus != nil {
-			for _, pair := range dockerInfo.SystemStatus {
-				fmt.Fprintf(output, " %s: %s\n", pair[0], pair[1])
-			}
-		}
-		fmt.Fprintln(output, "LoggingDriver:", dockerInfo.LoggingDriver)
-		fmt.Fprintln(output, " CgroupDriver:", dockerInfo.CgroupDriver)
-		if len(dockerInfo.Warnings) > 0 {
-			for _, w := range dockerInfo.Warnings {
-				fmt.Fprintln(output, w)
-			}
-		}
-	} else {
-		fmt.Fprintln(output, dockerErr.Error())
-	}
+	// printHeader(output, "Docker: Info")
+	// if dockerErr == nil {
+	// 	fmt.Fprintln(output, "Server Version:", dockerInfo.ServerVersion)
+	// 	fmt.Fprintln(output, "Storage Driver:", dockerInfo.Driver)
+	// 	if dockerInfo.DriverStatus != nil {
+	// 		for _, pair := range dockerInfo.DriverStatus {
+	// 			fmt.Fprintf(output, "  %s: %s\n", pair[0], pair[1])
+	// 		}
+	// 	}
+	// 	if dockerInfo.SystemStatus != nil {
+	// 		for _, pair := range dockerInfo.SystemStatus {
+	// 			fmt.Fprintf(output, " %s: %s\n", pair[0], pair[1])
+	// 		}
+	// 	}
+	// 	fmt.Fprintln(output, "LoggingDriver:", dockerInfo.LoggingDriver)
+	// 	fmt.Fprintln(output, " CgroupDriver:", dockerInfo.CgroupDriver)
+	// 	if len(dockerInfo.Warnings) > 0 {
+	// 		for _, w := range dockerInfo.Warnings {
+	// 			fmt.Fprintln(output, w)
+	// 		}
+	// 	}
+	// } else {
+	// 	fmt.Fprintln(output, dockerErr.Error())
+	// }
 
 	printHeader(output, "Docker: Running Containers")
 	c := exec.Command("docker", "ps")
@@ -204,22 +201,6 @@ func diagnosticsCmdRun(*cobra.Command, []string) {
 			fmt.Println("Your report is available here: ", u)
 		}
 	}
-}
-
-func getDockerInfo() (types.Version, types.Info, error) {
-	client, err := environment.Docker()
-	if err != nil {
-		return types.Version{}, types.Info{}, err
-	}
-	dockerVersion, err := client.ServerVersion(context.Background())
-	if err != nil {
-		return types.Version{}, types.Info{}, err
-	}
-	dockerInfo, err := client.Info(context.Background())
-	if err != nil {
-		return types.Version{}, types.Info{}, err
-	}
-	return dockerVersion, dockerInfo, nil
 }
 
 func uploadToHastebin(hbUrl, content string) (string, error) {

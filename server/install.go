@@ -13,7 +13,6 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/apex/log"
-	"github.com/docker/docker/client"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/pterodactyl/wings/config"
@@ -114,10 +113,9 @@ func (s *Server) internalInstall() error {
 }
 
 type InstallationProcess struct {
-	Server    *Server
-	Script    *remote.InstallationScript
-	client    *client.Client
-	clientset *kubernetes.Clientset
+	Server *Server
+	Script *remote.InstallationScript
+	client *kubernetes.Clientset
 }
 
 // Generates a new installation process struct that will be used to create containers,
@@ -128,16 +126,10 @@ func NewInstallationProcess(s *Server, script *remote.InstallationScript) (*Inst
 		Server: s,
 	}
 
-	if c, err := environment.Docker(); err != nil {
-		return nil, err
-	} else {
-		proc.client = c
-	}
-
 	if _, c, err := environment.Kubernetes(); err != nil {
 		return nil, err
 	} else {
-		proc.clientset = c
+		proc.client = c
 	}
 
 	return proc, nil
@@ -167,11 +159,11 @@ func (s *Server) SetRestoring(state bool) {
 
 // Removes the installer container for the server.
 func (ip *InstallationProcess) RemoveContainer() error {
-	err := ip.clientset.CoreV1().Pods(config.Get().System.Namespace).Delete(ip.Server.Context(), ip.Server.ID()+"-installer", metav1.DeleteOptions{})
+	err := ip.client.CoreV1().Pods(config.Get().System.Namespace).Delete(ip.Server.Context(), ip.Server.ID()+"-installer", metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
-	err = ip.clientset.CoreV1().ConfigMaps(config.Get().System.Namespace).Delete(ip.Server.Context(), ip.Server.ID()+"-configmap", metav1.DeleteOptions{})
+	err = ip.client.CoreV1().ConfigMaps(config.Get().System.Namespace).Delete(ip.Server.Context(), ip.Server.ID()+"-configmap", metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -263,7 +255,7 @@ func (ip *InstallationProcess) BeforeExecute() error {
 	var zero int64 = 0
 	policy := metav1.DeletePropagationForeground
 
-	if err := ip.clientset.CoreV1().PersistentVolumeClaims(config.Get().System.Namespace).Delete(context.Background(), ip.Server.ID()+"-pvc", metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy}); err != nil {
+	if err := ip.client.CoreV1().PersistentVolumeClaims(config.Get().System.Namespace).Delete(context.Background(), ip.Server.ID()+"-pvc", metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy}); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return errors.WithMessage(err, "failed to remove pvc before running installation")
 		}
@@ -287,7 +279,7 @@ func (ip *InstallationProcess) AfterExecute(containerId string) error {
 	defer ip.RemoveContainer()
 
 	ip.Server.Log().WithField("container_id", containerId).Debug("pulling installation logs for server")
-	reader := ip.clientset.CoreV1().Pods(config.Get().System.Namespace).GetLogs(ip.Server.ID()+"-installer", &corev1.PodLogOptions{
+	reader := ip.client.CoreV1().Pods(config.Get().System.Namespace).GetLogs(ip.Server.ID()+"-installer", &corev1.PodLogOptions{
 		Follow: false,
 	})
 	podLogs, err := reader.Stream(ip.Server.Context())
@@ -344,7 +336,7 @@ func (ip *InstallationProcess) AfterExecute(containerId string) error {
 // Return a condition function that indicates whether the given pod is currently running
 func (ip *InstallationProcess) isPodRunning(podName, namespace string) wait.ConditionFunc {
 	return func() (bool, error) {
-		pod, err := ip.clientset.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		pod, err := ip.client.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -362,7 +354,7 @@ func (ip *InstallationProcess) isPodRunning(podName, namespace string) wait.Cond
 // Return a condition function that indicates whether the given pod is completed
 func (ip *InstallationProcess) isPodSucceeded(podName, namespace string) wait.ConditionFunc {
 	return func() (bool, error) {
-		pod, err := ip.clientset.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		pod, err := ip.client.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -424,7 +416,7 @@ func (ip *InstallationProcess) Execute() (string, error) {
 	ip.Server.Log().WithField("configmap", ip.Server.ID()+"-configmap").Info("creating configmap")
 
 	go func() {
-		_, err = ip.clientset.CoreV1().ConfigMaps(config.Get().System.Namespace).Create(ctx, configmap, metav1.CreateOptions{})
+		_, err = ip.client.CoreV1().ConfigMaps(config.Get().System.Namespace).Create(ctx, configmap, metav1.CreateOptions{})
 
 		if err != nil && apierrors.IsAlreadyExists(err) {
 			ip.Server.Log().WithField("error", err).Warn("failed to create configmap")
@@ -455,7 +447,7 @@ func (ip *InstallationProcess) Execute() (string, error) {
 
 	ip.Server.Log().WithField("pvc", ip.Server.ID()+"-pvc").Info("creating pvc")
 
-	_, err = ip.clientset.CoreV1().PersistentVolumeClaims(config.Get().System.Namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
+	_, err = ip.client.CoreV1().PersistentVolumeClaims(config.Get().System.Namespace).Create(context.TODO(), pvc, metav1.CreateOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -548,7 +540,7 @@ func (ip *InstallationProcess) Execute() (string, error) {
 	}()
 
 	ip.Server.Log().WithField("container_id", ip.Server.ID()+"-installer").Info("running installation script for server in container")
-	_, err = ip.clientset.CoreV1().Pods(config.Get().System.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	_, err = ip.client.CoreV1().Pods(config.Get().System.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -586,7 +578,7 @@ func (ip *InstallationProcess) Execute() (string, error) {
 // the server configuration directory, as well as to a websocket listener so
 // that the process can be viewed in the panel by administrators.
 func (ip *InstallationProcess) StreamOutput(ctx context.Context, id string) error {
-	req := ip.clientset.CoreV1().Pods(config.Get().System.Namespace).GetLogs(ip.Server.ID()+"-installer", &corev1.PodLogOptions{
+	req := ip.client.CoreV1().Pods(config.Get().System.Namespace).GetLogs(ip.Server.ID()+"-installer", &corev1.PodLogOptions{
 		Follow: true,
 	})
 	podLogs, err := req.Stream(ctx)
