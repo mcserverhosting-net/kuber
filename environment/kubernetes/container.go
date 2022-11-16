@@ -12,8 +12,6 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/apex/log"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,7 +46,7 @@ func (e *Environment) isPodRunning(podName, namespace string) wait.ConditionFunc
 	return func() (bool, error) {
 		// fmt.Printf(".") // progress bar!
 
-		pod, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		pod, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -119,7 +117,7 @@ func (e *Environment) Attach(ctx context.Context) error {
 			}
 		}()
 
-		reader := e.client2.CoreV1().Pods(config.Get().System.Namespace).GetLogs(e.Id, &corev1.PodLogOptions{
+		reader := e.client.CoreV1().Pods(config.Get().System.Namespace).GetLogs(e.Id, &corev1.PodLogOptions{
 			Follow: true,
 		})
 		podLogs, err := reader.Stream(context.TODO())
@@ -145,32 +143,35 @@ func (e *Environment) Attach(ctx context.Context) error {
 // limits without actually making any changes to the operational state of the
 // container. This allows memory, cpu, and IO limitations to be adjusted on the
 // fly for individual instances.
-func (e *Environment) InSituUpdate() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 
-	if _, err := e.ContainerInspect(ctx); err != nil {
-		// If the container doesn't exist for some reason there really isn't anything
-		// we can do to fix that in this process (it doesn't make sense at least). In those
-		// cases just return without doing anything since we still want to save the configuration
-		// to the disk.
-		//
-		// We'll let a boot process make modifications to the container if needed at this point.
-		if client.IsErrNotFound(err) {
-			return nil
-		}
-		return errors.Wrap(err, "environment/docker: could not inspect container")
-	}
+func (e *Environment) InSituUpdate() error {
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	// defer cancel()
+
+	// if _, err := e.ContainerInspect(ctx); err != nil {
+	// 	// If the container doesn't exist for some reason there really isn't anything
+	// 	// we can do to fix that in this process (it doesn't make sense at least). In those
+	// 	// cases just return without doing anything since we still want to save the configuration
+	// 	// to the disk.
+	// 	//
+	// 	// We'll let a boot process make modifications to the container if needed at this point.
+	// 	if client.IsErrNotFound(err) {
+	// 		return nil
+	// 	}
+	// 	return errors.Wrap(err, "environment/docker: could not inspect container")
+	// }
 
 	// CPU pinning cannot be removed once it is applied to a container. The same is true
 	// for removing memory limits, a container must be re-created.
 	//
 	// @see https://github.com/moby/moby/issues/41946
-	if _, err := e.client.ContainerUpdate(ctx, e.Id, container.UpdateConfig{
-		Resources: e.Configuration.Limits().AsContainerResources(),
-	}); err != nil {
-		return errors.Wrap(err, "environment/docker: could not update container")
-	}
+
+	//	if _, err := e.client.ContainerUpdate(ctx, e.Id, container.UpdateConfig{
+	//		Resources: e.Configuration.Limits().AsContainerResources(),
+	//	}); err != nil {
+	//
+	//		return errors.Wrap(err, "environment/docker: could not update container")
+	//	}
 	return nil
 }
 
@@ -183,7 +184,7 @@ func (e *Environment) Create() error {
 	// If the pod already exists don't hit the user with an error, just return
 	// the current information about it which is what we would do when creating the
 	// pod anyways.
-	if _, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{}); err == nil {
+	if _, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{}); err == nil {
 		return nil
 	} else if !apierrors.IsNotFound(err) {
 		return errors.Wrap(err, "environment/kubernetes: failed to inspect pod")
@@ -296,7 +297,7 @@ func (e *Environment) Create() error {
 	// 	conf.User = strconv.Itoa(cfg.System.User.Uid) + ":" + strconv.Itoa(cfg.System.User.Gid)
 	// }
 
-	if _, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Create(ctx, pod, metav1.CreateOptions{}); err != nil {
+	if _, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Create(ctx, pod, metav1.CreateOptions{}); err != nil {
 		return errors.Wrap(err, "environment/kubernetes: failed to create pod")
 	}
 
@@ -327,7 +328,7 @@ func (e *Environment) Create() error {
 		service.Spec.Ports = append(service.Spec.Ports, corev1.ServicePort{Name: b.Proto() + b.Port(), Protocol: corev1.Protocol(protocol), Port: int32(port)})
 	}
 
-	if _, err := e.client2.CoreV1().Services(config.Get().System.Namespace).Create(ctx, service, metav1.CreateOptions{}); err != nil {
+	if _, err := e.client.CoreV1().Services(config.Get().System.Namespace).Create(ctx, service, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return errors.Wrap(err, "environment/kubernetes: failed to create service")
 		}
@@ -346,19 +347,19 @@ func (e *Environment) Destroy() error {
 	policy := metav1.DeletePropagationForeground
 
 	// Delete Pod
-	err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Delete(context.Background(), e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy})
+	err := e.client.CoreV1().Pods(config.Get().System.Namespace).Delete(context.Background(), e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
 
 	// Delete Service
-	err = e.client2.CoreV1().Services(config.Get().System.Namespace).Delete(context.Background(), "svc-"+e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy})
+	err = e.client.CoreV1().Services(config.Get().System.Namespace).Delete(context.Background(), "svc-"+e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
 
 	// Delete PVC
-	err = e.client2.CoreV1().PersistentVolumeClaims(config.Get().System.Namespace).Delete(context.Background(), e.Id+"-pvc", metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy})
+	err = e.client.CoreV1().PersistentVolumeClaims(config.Get().System.Namespace).Delete(context.Background(), e.Id+"-pvc", metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
@@ -386,7 +387,7 @@ func (e *Environment) SendCommand(c string) error {
 		e.SetState(environment.ProcessStoppingState)
 	}
 
-	req := e.client2.CoreV1().RESTClient().
+	req := e.client.CoreV1().RESTClient().
 		Post().
 		Namespace(config.Get().System.Namespace).
 		Resource("pods").
@@ -428,7 +429,7 @@ func (e *Environment) SendCommand(c string) error {
 // is running or not, it will simply try to read the last X bytes of the file
 // and return them.
 func (e *Environment) Readlog(lines int) ([]string, error) {
-	r := e.client2.CoreV1().Pods(config.Get().System.Namespace).GetLogs(e.Id, &corev1.PodLogOptions{
+	r := e.client.CoreV1().Pods(config.Get().System.Namespace).GetLogs(e.Id, &corev1.PodLogOptions{
 		TailLines: &[]int64{int64(lines)}[0],
 	})
 	podLogs, err := r.Stream(context.Background())

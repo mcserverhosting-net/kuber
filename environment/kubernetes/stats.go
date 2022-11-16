@@ -17,7 +17,7 @@ import (
 // Uptime returns the current uptime of the container in milliseconds. If the
 // container is not currently running this will return 0.
 func (e *Environment) Uptime(ctx context.Context) (int64, error) {
-	ins, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
+	ins, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
 	if err != nil {
 		return 0, errors.Wrap(err, "environment: could not get pod")
 	}

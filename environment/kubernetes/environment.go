@@ -8,8 +8,8 @@ import (
 	"emperror.dev/errors"
 	"github.com/apex/log"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -43,9 +43,8 @@ type Environment struct {
 	meta *Metadata
 
 	// The Docker client being used for this instance.
-	client  *client.Client
-	config  *rest.Config
-	client2 *kubernetes.Clientset
+	config *rest.Config
+	client *kubernetes.Clientset
 
 	// Controls the hijacked response stream which exists only when we're attached to
 	// the running container instance.
@@ -68,12 +67,7 @@ type Environment struct {
 // unique per-server (we use the UUID by default). The container does not need
 // to exist at this point.
 func New(id string, m *Metadata, c *environment.Configuration) (*Environment, error) {
-	cli, err := environment.Docker()
-	if err != nil {
-		return nil, err
-	}
-
-	config, cli2, err := environment.Kubernetes()
+	config, cli, err := environment.Kubernetes()
 	if err != nil {
 		return nil, err
 	}
@@ -82,9 +76,8 @@ func New(id string, m *Metadata, c *environment.Configuration) (*Environment, er
 		Id:            id,
 		Configuration: c,
 		meta:          m,
-		client:        cli,
 		config:        config,
-		client2:       cli2,
+		client:        cli,
 		st:            system.NewAtomicString(environment.ProcessOfflineState),
 		emitter:       events.NewBus(),
 	}
@@ -128,11 +121,11 @@ func (e *Environment) Events() *events.Bus {
 // name as the lookup parameter in addition to the longer ID auto-assigned when
 // the container is created.
 func (e *Environment) Exists() (bool, error) {
-	_, err := e.ContainerInspect(context.Background())
+	_, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(context.Background(), e.Id, metav1.GetOptions{})
 	if err != nil {
 		// If this error is because the container instance wasn't found via Docker we
 		// can safely ignore the error and just return false.
-		if client.IsErrNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err
@@ -150,7 +143,7 @@ func (e *Environment) Exists() (bool, error) {
 //
 // @see docker/client/errors.go
 func (e *Environment) IsRunning(ctx context.Context) (bool, error) {
-	c, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
+	c, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -164,7 +157,7 @@ func (e *Environment) IsRunning(ctx context.Context) (bool, error) {
 // ExitState returns the container exit state, the exit code and whether or not
 // the container was killed by the OOM killer.
 func (e *Environment) ExitState() (uint32, bool, error) {
-	c, err := e.ContainerInspect(context.Background())
+	c, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(context.Background(), e.Id, metav1.GetOptions{})
 	if err != nil {
 		// I'm not entirely sure how this can happen to be honest. I tried deleting a
 		// container _while_ a server was running and wings gracefully saw the crash and
@@ -175,12 +168,19 @@ func (e *Environment) ExitState() (uint32, bool, error) {
 		// so that's a mystery that will have to go unsolved.
 		//
 		// @see https://github.com/pterodactyl/panel/issues/2003
-		if client.IsErrNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return 1, false, nil
 		}
 		return 0, false, err
 	}
-	return uint32(c.State.ExitCode), c.State.OOMKilled, nil
+
+	if c.Status.Phase != v1.PodRunning {
+		if c.Status.ContainerStatuses[0].State.Terminated.ExitCode == 137 {
+			return 137, true, nil
+		}
+		return uint32(c.Status.ContainerStatuses[0].State.Terminated.ExitCode), false, nil
+	}
+	return 1, false, nil
 }
 
 // Config returns the environment configuration allowing a process to make

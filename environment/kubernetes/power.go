@@ -33,7 +33,7 @@ func (e *Environment) OnBeforeStart(ctx context.Context) error {
 	var zero int64 = 0
 	policy := metav1.DeletePropagationForeground
 
-	if err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Delete(ctx, e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy}); err != nil {
+	if err := e.client.CoreV1().Pods(config.Get().System.Namespace).Delete(ctx, e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy}); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return errors.WrapIf(err, "environment/kubernetes: failed to remove pod during pre-boot")
 		}
@@ -84,7 +84,7 @@ func (e *Environment) Start(ctx context.Context) error {
 		return nil
 	}
 
-	if c, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{}); err != nil {
+	if c, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{}); err != nil {
 		// Do nothing if the pod is not found, we just don't want to continue
 		// to the next block of code here. This check was inlined here to guard against
 		// a nil-pointer when checking c.State below.
@@ -100,7 +100,7 @@ func (e *Environment) Start(ctx context.Context) error {
 
 			go func() {
 				conditionFunc := func() (bool, error) {
-					pod, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), e.Id, metav1.GetOptions{})
+					pod, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(context.TODO(), e.Id, metav1.GetOptions{})
 					if err != nil {
 						return false, err
 					}
@@ -218,7 +218,7 @@ func (e *Environment) Stop(ctx context.Context) error {
 
 	// Allow the stop action to run for however long it takes, similar to executing a command
 	// and using a different logic pathway to wait for the container to stop successfully.
-	if err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Delete(ctx, e.Id, metav1.DeleteOptions{}); err != nil {
+	if err := e.client.CoreV1().Pods(config.Get().System.Namespace).Delete(ctx, e.Id, metav1.DeleteOptions{}); err != nil {
 		// If the container does not exist just mark the process as stopped and return without
 		// an error.
 		if apierrors.IsNotFound(err) {
@@ -275,7 +275,7 @@ func (e *Environment) WaitForStop(ctx context.Context, duration time.Duration, t
 	// longer running. If this wait does not end by the time seconds have passed,
 	// attempt to terminate the container, or return an error.
 	conditionFunc := func(context.Context) (bool, error) {
-		_, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(tctx, e.Id, metav1.GetOptions{})
+		_, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(tctx, e.Id, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return true, nil
@@ -300,7 +300,7 @@ func (e *Environment) WaitForStop(ctx context.Context, duration time.Duration, t
 
 // Terminate forcefully terminates the container using the signal provided.
 func (e *Environment) Terminate(ctx context.Context, signal os.Signal) error {
-	_, err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
+	_, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{})
 	if err != nil {
 		// Treat missing containers as an okay error state, means it is obviously
 		// already terminated at this point.
@@ -329,7 +329,7 @@ func (e *Environment) Terminate(ctx context.Context, signal os.Signal) error {
 	var zero int64 = 0
 	policy := metav1.DeletePropagationForeground
 
-	if err := e.client2.CoreV1().Pods(config.Get().System.Namespace).Delete(ctx, e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy}); err != nil && !apierrors.IsNotFound(err) {
+	if err := e.client.CoreV1().Pods(config.Get().System.Namespace).Delete(ctx, e.Id, metav1.DeleteOptions{GracePeriodSeconds: &zero, PropagationPolicy: &policy}); err != nil && !apierrors.IsNotFound(err) {
 		return errors.WithStack(err)
 	}
 

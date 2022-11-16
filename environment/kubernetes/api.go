@@ -1,8 +1,6 @@
 package docker
 
 import (
-	"context"
-	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -12,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
 	"github.com/goccy/go-json"
 
 	"github.com/pterodactyl/wings/config"
@@ -49,49 +46,50 @@ func configure(c *client.Client) {
 // a large number of requests to this endpoint are spawned by Wings, and the
 // standard "encoding/json" shows its performance woes badly even with single
 // containers running.
-func (e *Environment) ContainerInspect(ctx context.Context) (types.ContainerJSON, error) {
-	configure(e.client)
 
-	// Support feature flagging of this functionality so that if something goes
-	// wrong for now it is easy enough for people to switch back to the older method
-	// of fetching stats.
-	if !fastEnabled {
-		return e.client.ContainerInspect(ctx, e.Id)
-	}
+// func (e *Environment) ContainerInspect(ctx context.Context) (types.ContainerJSON, error) {
+// 	configure(e.client)
 
-	var st types.ContainerJSON
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/containers/"+e.Id+"/json", nil)
-	if err != nil {
-		return st, errors.WithStack(err)
-	}
+// 	// Support feature flagging of this functionality so that if something goes
+// 	// wrong for now it is easy enough for people to switch back to the older method
+// 	// of fetching stats.
+// 	if !fastEnabled {
+// 		return e.client.ContainerInspect(ctx, e.Id)
+// 	}
 
-	if cli.proto == "unix" || cli.proto == "npipe" {
-		req.Host = "docker"
-	}
+// 	var st types.ContainerJSON
+// 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/containers/"+e.Id+"/json", nil)
+// 	if err != nil {
+// 		return st, errors.WithStack(err)
+// 	}
 
-	req.URL.Host = cli.host
-	req.URL.Scheme = cli.scheme
+// 	if cli.proto == "unix" || cli.proto == "npipe" {
+// 		req.Host = "docker"
+// 	}
 
-	res, err := e.client.HTTPClient().Do(req)
-	if err != nil {
-		if res == nil {
-			return st, errdefs.Unknown(err)
-		}
-		return st, errdefs.FromStatusCode(err, res.StatusCode)
-	}
+// 	req.URL.Host = cli.host
+// 	req.URL.Scheme = cli.scheme
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return st, errors.Wrap(err, "failed to read response body from Docker")
-	}
-	if err := parseErrorFromResponse(res, body); err != nil {
-		return st, errdefs.FromStatusCode(err, res.StatusCode)
-	}
-	if err := json.Unmarshal(body, &st); err != nil {
-		return st, errors.WithStack(err)
-	}
-	return st, nil
-}
+// 	res, err := e.client.HTTPClient().Do(req)
+// 	if err != nil {
+// 		if res == nil {
+// 			return st, errdefs.Unknown(err)
+// 		}
+// 		return st, errdefs.FromStatusCode(err, res.StatusCode)
+// 	}
+
+// 	body, err := io.ReadAll(res.Body)
+// 	if err != nil {
+// 		return st, errors.Wrap(err, "failed to read response body from Docker")
+// 	}
+// 	if err := parseErrorFromResponse(res, body); err != nil {
+// 		return st, errdefs.FromStatusCode(err, res.StatusCode)
+// 	}
+// 	if err := json.Unmarshal(body, &st); err != nil {
+// 		return st, errors.WithStack(err)
+// 	}
+// 	return st, nil
+// }
 
 // parseErrorFromResponse is a re-implementation of Docker's
 // client.checkResponseErr() function.
