@@ -33,7 +33,6 @@ import (
 	"github.com/pterodactyl/wings/remote"
 	"github.com/pterodactyl/wings/router"
 	"github.com/pterodactyl/wings/server"
-	"github.com/pterodactyl/wings/sftp"
 	"github.com/pterodactyl/wings/system"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -141,9 +140,9 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 		log.WithField("error", err).Fatal("failed to load server configurations")
 	}
 
-	if err := environment.ConfigureDocker(cmd.Context()); err != nil {
-		log.WithField("error", err).Fatal("failed to configure docker environment")
-	}
+	// if err := environment.ConfigureDocker(cmd.Context()); err != nil {
+	// 	log.WithField("error", err).Fatal("failed to configure docker environment")
+	// }
 
 	if err := config.WriteToDisk(config.Get()); err != nil {
 		log.WithField("error", err).Fatal("failed to write configuration to disk")
@@ -272,13 +271,13 @@ func rootCmdRun(cmd *cobra.Command, _ []string) {
 		s.StartAsync()
 	}
 
-	go func() {
-		// Run the SFTP server.
-		if err := sftp.New(manager).Run(); err != nil {
-			log.WithError(err).Fatal("failed to initialize the sftp server")
-			return
-		}
-	}()
+	// go func() {
+	// 	// Run the SFTP server.
+	// 	if err := sftp.New(manager).Run(); err != nil {
+	// 		log.WithError(err).Fatal("failed to initialize the sftp server")
+	// 		return
+	// 	}
+	// }()
 
 	go func() {
 		log.Info("updating server states on Panel: marking installing/restoring servers as normal")
