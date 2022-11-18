@@ -3,9 +3,9 @@ package server
 import (
 	"time"
 
-	docker "github.com/pterodactyl/wings/environment/kubernetes"
+	docker "github.com/kubectyl/kuber/environment/kubernetes"
 
-	"github.com/pterodactyl/wings/environment"
+	"github.com/kubectyl/kuber/environment"
 )
 
 // SyncWithEnvironment updates the environment for the server to match any of

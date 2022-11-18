@@ -1,4 +1,4 @@
-package docker
+package kubernetes
 
 import (
 	"context"
@@ -14,11 +14,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
-	"github.com/pterodactyl/wings/events"
-	"github.com/pterodactyl/wings/remote"
-	"github.com/pterodactyl/wings/system"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
+	"github.com/kubectyl/kuber/events"
+	"github.com/kubectyl/kuber/remote"
+	"github.com/kubectyl/kuber/system"
 )
 
 type Metadata struct {
@@ -174,10 +174,12 @@ func (e *Environment) ExitState() (uint32, bool, error) {
 		return 0, false, err
 	}
 
-	if c.Status.Phase != v1.PodRunning {
+	// Still checking if the pod is running because sometimes crash detection is buggy
+	if c.Status.Phase != v1.PodRunning && len(c.Status.ContainerStatuses) != 0 {
 		if c.Status.ContainerStatuses[0].State.Terminated.ExitCode == 137 {
 			return 137, true, nil
 		}
+
 		return uint32(c.Status.ContainerStatuses[0].State.Terminated.ExitCode), false, nil
 	}
 	return 1, false, nil

@@ -1,4 +1,4 @@
-package docker
+package kubernetes
 
 import (
 	"bufio"
@@ -21,9 +21,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
-	"github.com/pterodactyl/wings/system"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
+	"github.com/kubectyl/kuber/system"
 )
 
 var ErrNotAttached = errors.Sentinel("not attached to instance")
@@ -145,33 +145,48 @@ func (e *Environment) Attach(ctx context.Context) error {
 // fly for individual instances.
 
 func (e *Environment) InSituUpdate() error {
-	// ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
-	// if _, err := e.ContainerInspect(ctx); err != nil {
-	// 	// If the container doesn't exist for some reason there really isn't anything
-	// 	// we can do to fix that in this process (it doesn't make sense at least). In those
-	// 	// cases just return without doing anything since we still want to save the configuration
-	// 	// to the disk.
-	// 	//
-	// 	// We'll let a boot process make modifications to the container if needed at this point.
-	// 	if client.IsErrNotFound(err) {
-	// 		return nil
-	// 	}
-	// 	return errors.Wrap(err, "environment/docker: could not inspect container")
-	// }
+	if _, err := e.client.CoreV1().Pods(config.Get().System.Namespace).Get(ctx, e.Id, metav1.GetOptions{}); err != nil {
+		// If the pod doesn't exist for some reason there really isn't anything
+		// we can do to fix that in this process (it doesn't make sense at least). In those
+		// cases just return without doing anything since we still want to save the configuration
+		// to the disk.
+		//
+		// We'll let a boot process make modifications to the pod if needed at this point.
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrap(err, "environment/docker: could not get pod")
+	} else {
+		// resources := e.Configuration.Limits()
+		// Resources:
+		// 	corev1.ResourceRequirements{
+		// 		Limits: corev1.ResourceList{
+		// 			"cpu":    *resource.NewQuantity(resources.CpuLimit/100, resource.DecimalSI),
+		// 			"memory": *resource.NewQuantity(resources.BoundedMemoryLimit(), resource.BinarySI),
+		// 		},
+		// 		Requests: corev1.ResourceList{
+		// 			"cpu":    *resource.NewQuantity(resources.CpuLimit/100, resource.DecimalSI),
+		// 			"memory": *resource.NewQuantity(resources.BoundedMemoryLimit(), resource.BinarySI),
+		// 		},
+		// 	},
+		// pod.Spec.Containers[0].Resources.Limits.Cpu() = append()
+		// pod.Spec.Containers[0].Resources.Requests[v1.ResourceCPU] = *resource.NewQuantity(resources.CpuLimit*10, resource.DecimalSI)
+	}
 
 	// CPU pinning cannot be removed once it is applied to a container. The same is true
 	// for removing memory limits, a container must be re-created.
-	//
+
 	// @see https://github.com/moby/moby/issues/41946
 
-	//	if _, err := e.client.ContainerUpdate(ctx, e.Id, container.UpdateConfig{
-	//		Resources: e.Configuration.Limits().AsContainerResources(),
-	//	}); err != nil {
-	//
-	//		return errors.Wrap(err, "environment/docker: could not update container")
-	//	}
+	// if _, err := e.client.ContainerUpdate(ctx, e.Id, container.UpdateConfig{
+	// 	Resources: e.Configuration.Limits().AsContainerResources(),
+	// }); err != nil {
+	// 	return errors.Wrap(err, "environment/docker: could not update container")
+	// }
+
 	return nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pterodactyl/wings/events"
+	"github.com/kubectyl/kuber/events"
 )
 
 const (

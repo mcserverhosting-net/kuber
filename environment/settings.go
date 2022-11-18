@@ -8,7 +8,7 @@ import (
 	"github.com/apex/log"
 	"github.com/docker/docker/api/types/container"
 
-	"github.com/pterodactyl/wings/config"
+	"github.com/kubectyl/kuber/config"
 )
 
 type Mount struct {

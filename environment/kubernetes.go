@@ -1,7 +1,7 @@
 package environment
 
 import (
-	"github.com/pterodactyl/wings/config"
+	"github.com/kubectyl/kuber/config"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )

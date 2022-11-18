@@ -15,10 +15,10 @@ import (
 	"github.com/apex/log"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
-	"github.com/pterodactyl/wings/remote"
-	"github.com/pterodactyl/wings/system"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
+	"github.com/kubectyl/kuber/remote"
+	"github.com/kubectyl/kuber/system"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -381,10 +381,6 @@ func (ip *InstallationProcess) waitForPodSucceeded() error {
 	return wait.PollInfinite(time.Second, ip.isPodSucceeded(ip.Server.ID()+"-installer", config.Get().System.Namespace))
 }
 
-func ptrstring(p string) *string {
-	return &p
-}
-
 // Execute executes the installation process inside a specially created docker
 // container.
 func (ip *InstallationProcess) Execute() (string, error) {
@@ -441,7 +437,7 @@ func (ip *InstallationProcess) Execute() (string, error) {
 					"storage": *resource.NewQuantity(ip.Server.DiskSpace(), resource.BinarySI),
 				},
 			},
-			StorageClassName: ptrstring("manual"),
+			StorageClassName: &[]string{config.Get().System.StorageClass}[0],
 		},
 	}
 

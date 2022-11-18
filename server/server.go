@@ -13,12 +13,12 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/goccy/go-json"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
-	"github.com/pterodactyl/wings/events"
-	"github.com/pterodactyl/wings/remote"
-	"github.com/pterodactyl/wings/server/filesystem"
-	"github.com/pterodactyl/wings/system"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
+	"github.com/kubectyl/kuber/events"
+	"github.com/kubectyl/kuber/remote"
+	"github.com/kubectyl/kuber/server/filesystem"
+	"github.com/kubectyl/kuber/system"
 )
 
 // Server is the high level definition for a server instance being controlled
@@ -324,7 +324,7 @@ func (s *Server) OnStateChange() {
 			if err := server.handleServerCrash(); err != nil {
 				if IsTooFrequentCrashError(err) {
 					server.Log().Info("did not restart server after crash; occurred too soon after the last")
-					s.Environment.Terminate(context.TODO(), os.Kill)
+					// s.Environment.Terminate(context.TODO(), os.Kill)
 				} else {
 					s.PublishConsoleOutputFromDaemon("Server crash was detected but an error occurred while handling it.")
 					server.Log().WithField("error", err).Error("failed to handle server crash")

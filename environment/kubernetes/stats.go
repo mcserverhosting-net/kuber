@@ -1,4 +1,4 @@
-package docker
+package kubernetes
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metrics "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
 )
 
 // Uptime returns the current uptime of the container in milliseconds. If the

@@ -15,11 +15,11 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/goccy/go-json"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
-	docker "github.com/pterodactyl/wings/environment/kubernetes"
-	"github.com/pterodactyl/wings/remote"
-	"github.com/pterodactyl/wings/server/filesystem"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
+	docker "github.com/kubectyl/kuber/environment/kubernetes"
+	"github.com/kubectyl/kuber/remote"
+	"github.com/kubectyl/kuber/server/filesystem"
 )
 
 type Manager struct {

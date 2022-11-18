@@ -21,13 +21,13 @@ import (
 	"github.com/juju/ratelimit"
 	"github.com/mitchellh/colorstring"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/installer"
-	"github.com/pterodactyl/wings/remote"
-	"github.com/pterodactyl/wings/router/middleware"
-	"github.com/pterodactyl/wings/router/tokens"
-	"github.com/pterodactyl/wings/server"
-	"github.com/pterodactyl/wings/server/filesystem"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/installer"
+	"github.com/kubectyl/kuber/remote"
+	"github.com/kubectyl/kuber/router/middleware"
+	"github.com/kubectyl/kuber/router/tokens"
+	"github.com/kubectyl/kuber/server"
+	"github.com/kubectyl/kuber/server/filesystem"
 )
 
 const progressWidth = 25

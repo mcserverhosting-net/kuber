@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/pterodactyl/wings/server"
-	"github.com/pterodactyl/wings/server/filesystem"
+	"github.com/kubectyl/kuber/server"
+	"github.com/kubectyl/kuber/server/filesystem"
 )
 
 type RequestError struct {
