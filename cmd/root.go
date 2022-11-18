@@ -25,15 +25,15 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 
-	"github.com/pterodactyl/wings/config"
-	"github.com/pterodactyl/wings/environment"
-	"github.com/pterodactyl/wings/internal/cron"
-	"github.com/pterodactyl/wings/internal/database"
-	"github.com/pterodactyl/wings/loggers/cli"
-	"github.com/pterodactyl/wings/remote"
-	"github.com/pterodactyl/wings/router"
-	"github.com/pterodactyl/wings/server"
-	"github.com/pterodactyl/wings/system"
+	"github.com/kubectyl/kuber/config"
+	"github.com/kubectyl/kuber/environment"
+	"github.com/kubectyl/kuber/internal/cron"
+	"github.com/kubectyl/kuber/internal/database"
+	"github.com/kubectyl/kuber/loggers/cli"
+	"github.com/kubectyl/kuber/remote"
+	"github.com/kubectyl/kuber/router"
+	"github.com/kubectyl/kuber/server"
+	"github.com/kubectyl/kuber/system"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -91,7 +91,6 @@ func init() {
 }
 
 func rootCmdRun(cmd *cobra.Command, _ []string) {
-	printLogo()
 	log.Debug("running in debug mode")
 	log.WithField("config_file", configPath).Info("loading configuration from file")
 
@@ -416,27 +415,6 @@ func initLogging() {
 	}
 	log.SetHandler(multi.New(cli.Default, cli.New(w.File, false)))
 	log.WithField("path", p).Info("writing log files to disk")
-}
-
-// Prints the wings logo, nothing special here!
-func printLogo() {
-	fmt.Printf(colorstring.Color(`
-                     ____
-__ [blue][bold]Pterodactyl[reset] _____/___/_______ _______ ______
-\_____\    \/\/    /   /       /  __   /   ___/
-   \___\          /   /   /   /  /_/  /___   /
-        \___/\___/___/___/___/___    /______/
-                            /_______/ [bold]%s[reset]
-
-Copyright © 2018 - %d Dane Everitt & Contributors
-
-Website:  https://pterodactyl.io
- Source:  https://github.com/pterodactyl/wings
-License:  https://github.com/pterodactyl/wings/blob/develop/LICENSE
-
-This software is made available under the terms of the MIT license.
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.%s`), system.Version, time.Now().Year(), "\n\n")
 }
 
 func exitWithConfigurationNotice() {
