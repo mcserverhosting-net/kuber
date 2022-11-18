@@ -22,7 +22,7 @@ import (
 	"github.com/gbrlsnchs/jwt/v3"
 	"gopkg.in/yaml.v2"
 
-	"github.com/pterodactyl/wings/system"
+	"github.com/kubectyl/kuber/system"
 )
 
 const DefaultLocation = "/etc/pterodactyl/config.yml"
@@ -215,6 +215,8 @@ type SystemConfiguration struct {
 	Host string `yaml:"host"`
 
 	BearerToken string `json:"bearer_token" yaml:"bearer_token"`
+
+	StorageClass string `default:"manual" yaml:"storageclass"`
 }
 
 type CrashDetection struct {
