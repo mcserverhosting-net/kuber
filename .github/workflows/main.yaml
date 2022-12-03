@@ -33,5 +33,4 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TOKEN }}
       with:
         upload_url: ${{ steps.create-release.outputs.upload_url }}
-        file: build/kuber_linux_amd64
-        file: build/kuber_linux_arm64
+        file: build/kuber_linux_amd64, build/kuber_linux_arm64
