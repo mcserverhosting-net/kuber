@@ -14,6 +14,9 @@ jobs:
         go-version: '1.19'
     - name: Build
       run: make build
+    - name: Install manifest-tool
+      run: |
+        go install github.com/estesp/manifest-tool/cmd/manifest-tool@latest
     - name: Build and Push Container Image
       run: make build-docker
       env:
