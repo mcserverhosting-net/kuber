@@ -26,11 +26,21 @@ jobs:
         release_name: Release ${{ github.ref }}
         draft: false
         prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset
+    - name: Upload amd64
+      id: upload-amd64-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.TOKEN }}
       with:
-        upload_url: ${{ steps.create-release.outputs.upload_url }}
-        file: build/kuber_linux_amd64, build/kuber_linux_arm64
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/kuber_linux_amd64
+        asset_name: kuber_linux_amd64
+    - name: Upload aarch64
+      id: upload-aarch64-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: build/kuber_linux_arm64
+        asset_name: kuber_linux_arm64

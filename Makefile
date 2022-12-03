@@ -15,12 +15,15 @@ build-aarch64:
 	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags "all=-trimpath=$(pwd)" -o build/kuber_linux_arm64 -v kuber.go
 
 build-docker:
-	docker build -t my-image:amd64 -f Dockerfile.amd64 .
-	docker build -t my-image:aarch64 -f Dockerfile.aarch64 .
+	docker build -t my-image:latest -f Dockerfile.amd64 .
+	docker build -t my-image:latest -f Dockerfile.aarch64 .
 	manifest-tool push from-args \
 	--platforms linux/amd64,linux/arm64 \
 	--template my-image:ARCH \
 	--target my-image:latest
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) docker.pkg.github.com
+	docker push docker.pkg.github.com/OWNER/REPO/my-image:latest
+
 
 
 # Runs a remotly debuggable session for Kuber allowing an IDE to connect and target
