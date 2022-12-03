@@ -1,5 +1,5 @@
 FROM golang:1.19
 
-COPY kuber_linux_arm64 /usr/local/bin/kuber
+COPY build/kuber_linux_arm64 /usr/local/bin/kuber
 
 ENTRYPOINT ["/usr/local/bin/kuber"]

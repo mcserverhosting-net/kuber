@@ -22,7 +22,7 @@ build-docker:
 	--template my-image:ARCH \
 	--target my-image:latest
 	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) docker.pkg.github.com
-	docker push docker.pkg.github.com/OWNER/REPO/my-image:latest
+	docker push $(DOCKER_IMAGE)
 
 
 
