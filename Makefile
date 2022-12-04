@@ -17,13 +17,13 @@ build-aarch64:
 build-docker:
 	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64 -f Dockerfile.amd64 .
 	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64 -f Dockerfile.aarch64 .
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) $(DOCKER_REGISTRY)
+	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64
+	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-arm64
 	docker manifest create \
 	$(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) \
 	--amend $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64 \
 	--amend $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) $(DOCKER_REGISTRY)
-	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64
-	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-arm64
 	docker manifest push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)
 
 
