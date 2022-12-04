@@ -16,6 +16,7 @@ build-aarch64:
 
 build-docker:
     docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) $(DOCKER_REGISTRY)
+	
     docker buildx build \
 	--push \
 	--platform linux/arm/v7,linux/arm64/v8,linux/amd64 \ --tag $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) .
