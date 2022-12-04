@@ -1,16 +1,9 @@
 ############################
 # STEP 1 build executable binary
 ############################
-FROM golang:alpine AS builder
-# Install git.
-# Git is required for fetching the dependencies.
-RUN apk update && apk add --no-cache git
+FROM golang:1.19 AS builder
 WORKDIR $GOPATH/src/mypackage/myapp/
 COPY . .
-# Fetch dependencies.
-# Using go get.
-RUN go get -d -v
-# Build the binary.
 RUN GOOS=linux go build -ldflags="-s -w" -gcflags "all=-trimpath=$(pwd)" -o /go/bin/kuber -v kuber.go
 ############################
 # STEP 2 build a small image
