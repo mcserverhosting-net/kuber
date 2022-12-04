@@ -12,8 +12,6 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: '1.19'
-    - name: Build
-      run: make build
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx
@@ -26,6 +24,8 @@ jobs:
         DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
         DOCKER_PATH: library/kuber
         DOCKER_TAG: latest
+    - name: Build
+      run: make build
     - name: Create Release
       id: create_release 
       uses: actions/create-release@v1
