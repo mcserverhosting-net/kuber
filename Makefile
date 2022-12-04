@@ -15,17 +15,10 @@ build-aarch64:
 	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags "all=-trimpath=$(pwd)" -o build/kuber_linux_arm64 -v kuber.go
 
 build-docker:
-	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64 -f Dockerfile.amd64 .
-	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64 -f Dockerfile.aarch64 .
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) $(DOCKER_REGISTRY)
-	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64
-	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64
-	docker manifest create \
-	$(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) \
-	--amend $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64 \
-	--amend $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64
-	docker manifest push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)
-
+    docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) $(DOCKER_REGISTRY)
+    docker buildx build \
+	--push \
+	--platform linux/arm/v7,linux/arm64/v8,linux/amd64 \ --tag $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) .
 
 
 # Runs a remotly debuggable session for Kuber allowing an IDE to connect and target
