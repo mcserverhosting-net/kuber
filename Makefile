@@ -19,7 +19,8 @@ build-docker:
 	
     docker buildx build \
 	--push \
-	--platform linux/arm/v7,linux/arm64/v8,linux/amd64 \ --tag $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) .
+	--platform linux/arm/v7,linux/arm64/v8,linux/amd64 \
+	--tag $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) .
 
 
 # Runs a remotly debuggable session for Kuber allowing an IDE to connect and target
