@@ -11,7 +11,7 @@ COPY . .
 # Using go get.
 RUN go get -d -v
 # Build the binary.
-RUN go build -ldflags="-s -w" -gcflags "all=-trimpath=$(pwd)" -o /go/bin/kuber -v kuber.go
+RUN GOOS=linux go build -ldflags="-s -w" -gcflags "all=-trimpath=$(pwd)" -o /go/bin/kuber -v kuber.go
 ############################
 # STEP 2 build a small image
 ############################
