@@ -15,14 +15,16 @@ build-aarch64:
 	GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -gcflags "all=-trimpath=$(pwd)" -o build/kuber_linux_arm64 -v kuber.go
 
 build-docker:
-	docker build -t my-image:latest -f Dockerfile.amd64 .
-	docker build -t my-image:latest -f Dockerfile.aarch64 .
-	manifest-tool push from-args \
-	--platforms linux/amd64,linux/arm64 \
-	--template my-image:ARCH \
-	--target my-image:latest
-	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) docker.pkg.github.com
-	docker push $(DOCKER_IMAGE)
+	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64 -f Dockerfile.amd64 .
+	docker build -t $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64 -f Dockerfile.aarch64 .
+	docker manifest create \
+	$(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG) \
+	--amend $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64 \
+	--amend $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-aarch64
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD) $(DOCKER_REGISTRY)
+	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-amd64
+	docker push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)-arm64
+	docker manifest push $(DOCKER_REGISTRY)/$(DOCKER_PATH):$(DOCKER_TAG)
 
 
 
